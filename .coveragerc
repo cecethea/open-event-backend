@@ -1,0 +1,7 @@
+[run]
+branch = true
+include = open_event_server/*
+omit = *__init__*, */tests/*, */migrations/*, */admin.py, */settings/*, */wsgi.py, manage.py
+
+[report]
+show_missing = true

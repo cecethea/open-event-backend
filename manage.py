@@ -5,7 +5,8 @@ import sys
 if __name__ == "__main__":
     os.environ.setdefault(
         "DJANGO_SETTINGS_MODULE",
-        "open_event_server.settings")
+        "open_event_server.settings.{}".format(os.environ.get("APP_ENV", "dev"))
+    )
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

@@ -2,8 +2,7 @@ from django.core.mail import send_mail as django_send_mail
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
 
-from open_event_server import settings, front_end_url
-
+from open_event_server.settings import base as settings
 TEMPLATES = settings.ANYMAIL.get('TEMPLATES')
 
 

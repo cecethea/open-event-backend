@@ -1,34 +1,69 @@
-version: '2'
+version: '3.9'
 
 services:
-  postgres:
-    image: postgres:latest
-    environment:
-      POSTGRES_DB: my_db_name
-      POSTGRES_USER: my_db_user
-      POSTGRES_PASSWORD: my_db_password
-  web:
-    restart: always
-    env_file: .env.docker
-    environment:
-      - DJANGO_SECRET_KEY=local
-    image: web
-    build: ./
-    command: >
-      bash -c "python wait_for_postgres.py &&
-               ./manage.py migrate &&
-               ./manage.py runserver 0.0.0.0:8000"
+  backend:
+    container_name: "${APP_NAME}-backend"
+    build:
+      context: .
+      dockerfile: deployment/Dockerfile
+      args:
+        - APP_NAME=${APP_NAME}
+        - APP_HOST=${APP_HOST}
+        - APP_PORT=${APP_PORT}
     volumes:
-      - ./:/code
+      - ./:/usr/src/app/
+      - ./deployment/scripts:/app/deployment/scripts/
+    env_file: .env
     ports:
-      - "8000:8000"
+      - "${APP_PORT}:${APP_PORT}"
     depends_on:
-      - postgres
-  documentation:
-    restart: always
-    build: ./
-    command: "mkdocs serve"
+      db:
+        condition: service_healthy
+    command: [ "/bin/sh", "/app/deployment/scripts/backend/start.sh" ]
+
+  db:
+    image: postgres:15.2-alpine
+    container_name: "${APP_NAME}-db"
+    hostname: "${POSTGRES_HOST:-db}"
     volumes:
-      - ./:/code
-    ports:
-      - "8001:8001"
+      - postgres_data_dir:/var/lib/postgresql/data/
+    env_file: .env
+    expose:
+      - "${POSTGRES_PORT:-5432}"
+    shm_size: 1g
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  redis:
+    container_name: "${APP_NAME}-redis"
+    image: redis:latest
+    volumes:
+        - redis_data:/data
+
+  celery-worker: &celery-worker
+    container_name: "${APP_NAME}-celery-worker"
+    build:
+      context: .
+      dockerfile: deployment/Dockerfile
+    volumes:
+      - ./:/usr/src/app/
+      - ./deployment/scripts:/app/deployment/scripts/
+    env_file: .env
+    depends_on:
+      - db
+      - redis
+      - backend
+    command: [ "/bin/sh", "/app/deployment/scripts/celery/start-worker.sh" ]
+
+  celery-beat:
+    <<: *celery-worker
+    container_name: "${APP_NAME}-celery-beat"
+    command: [ "/bin/sh", "/app/deployment/scripts/celery/start-beat.sh" ]
+
+volumes:
+  postgres_data_dir:
+  redis_data:

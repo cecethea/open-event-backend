@@ -10,10 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
-import os
+from os import getenv as os_getenv, path as os_path  # noqa
 from pathlib import Path
 from decouple import config, Csv
 from dj_database_url import parse as db_url
+from django.core.management.utils import get_random_secret_key
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = Path(__file__).absolute().parent.parent
@@ -21,17 +22,28 @@ BASE_DIR = Path(__file__).absolute().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = config(
+    "SECRET_KEY", get_random_secret_key()
+)  # If SECRET_KEY is not set, generate a random one
+
+APP_ENV = config("APP_ENV", "dev")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost', cast=Csv())
 
+if DEBUG:
+    CORS_ORIGIN_ALLOW_ALL = True
+else:
+    CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", "http://localhost").split(
+        ","
+    )
+    CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", "http://localhost").split(
+        ","
+    )
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -95,7 +107,6 @@ WSGI_APPLICATION = 'open_event_server.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/2.0/ref/settings/#databases
-
 DATABASES = {
     'default': config(
         'DATABASE_URL',
@@ -169,8 +180,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = "static/"
+STATIC_ROOT = os_path.join(BASE_DIR, "static")
+MEDIA_URL = "media/"
+MEDIA_ROOT = os_path.join(BASE_DIR, "media")
 
+# Default primary key field type
+# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Django Rest Framework
 
@@ -240,3 +258,18 @@ LOCAL_SETTINGS = {
         'RESET_PASSWORD': 'reset-password/{uid}/{token}',
     },
 }
+
+# Redis
+REDIS_DB_KEYS = {
+    "dev": 0,
+    "test": 1,
+    "prod": 2,
+}
+
+# Redis settings
+
+REDIS_HOST = config("REDIS_HOST", "redis")
+REDIS_PORT = config("REDIS_PORT", 6379)
+
+REDIS_DB = REDIS_DB_KEYS.get(APP_ENV, 0)
+REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"

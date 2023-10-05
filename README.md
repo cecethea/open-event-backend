@@ -103,4 +103,85 @@ and validate coding style (pycodestyle). You can use it after making changes to 
 python tests.py
 ```
 
-This script executes the exact same thing that would be executed by the Travis CI and Coveralls.
+### Build the image and run the container
+   
+   - If buildkit is not enabled, enable it and build the image:
+     ```bash
+     DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose -f docker-compose.yml up --build -d
+     ```
+   
+   - If buildkit is enabled, build the image:
+     ```bash
+     docker-compose -f docker-compose.yml up --build -d
+     ```
+   
+   - Or, use the shortcut:
+     ```bash
+     make build-dev
+     ```
+
+You can now access the application at http://localhost:8000. The development environment allows for immediate reflection of code changes.
+
+### Production Setup
+
+1. **Build the image and run the container:**  
+
+   - If buildkit is not enabled, enable it and build the image:
+     ```bash
+       DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose -f docker-compose.prod.yml up --build -d
+     ```
+
+   - If buildkit is enabled, build the image:
+     ```bash
+      docker-compose -f docker-compose.prod.yml up --build -d
+     ```
+   - Or, use the shortcut:
+     ```bash
+       make build-prod
+     ```
+
+---
+
+## Shortcuts 🔑
+
+This project includes several shortcuts to streamline the development process:
+
+- **Create migrations:**
+    ```bash
+    make make-migrations
+    ```
+
+- **Run migrations:**
+    ```bash
+    make migrate
+    ```
+
+- **Run the linter:**
+    ```bash
+    make lint
+    ```
+
+- **Run the formatter:**
+    ```bash
+    make format
+    ```
+
+- **Run the tests:**
+    ```bash
+    make test
+    ```
+
+- **Create a super user:**
+    ```bash
+    make super-user
+    ```
+
+- **Build and run dev environment:**
+    ```bash
+    make build-dev
+    ```
+
+- **Build and run prod environment:**
+    ```bash
+    make build-prod
+    ```

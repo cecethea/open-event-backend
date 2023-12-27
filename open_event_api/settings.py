@@ -13,9 +13,11 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 
 from environs import Env
+from decouple import config
 
 env = Env()
 env.read_env()
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,7 +27,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-=u1k=mf8%hzi*no3t1^)=c7mx%mmg)*$=cx(6r2cq-nx^)k_cl"
+SECRET_KEY = config('SECRET_KEY')
+USE_POSTGRES = config('USE_POSTGRES', False)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -92,9 +95,21 @@ WSGI_APPLICATION = "open_event_api.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    "default": env.dj_db_url("DATABASE_URL", default="sqlite:///db.sqlite3"),
-}
+if USE_POSTGRES:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config("POSTGRES_DB", "postgres"),
+            "USER": config("POSTGRES_USER", "postgres"),
+            "PASSWORD": config("POSTGRES_PASSWORD", "postgres"),
+            "HOST": config("POSTGRES_HOST", "localhost"),
+            "PORT": config("POSTGRES_PORT", "5432"),
+        }
+    }
+else:
+    DATABASES = {
+        "default": env.dj_db_url("DATABASE_URL", default="sqlite:///db.sqlite3"),
+    }
 
 
 # Password validation
